@@ -58,10 +58,12 @@ int main(void)
 
 	/* FCC Part 15.231 micro-power settings. */
 	config.frequency = 433920000; /* 433.92 MHz */
+	/* Range profile: high processing gain and robust FEC while keeping the
+	 * 12-byte packet below the FCC one-second burst limit. */
 	config.bandwidth = BW_125_KHZ;
-	config.datarate = SF_10;
-	config.preamble_len = 8;
-	config.coding_rate = CR_4_5;
+	config.datarate = SF_11;
+	config.preamble_len = 16;
+	config.coding_rate = CR_4_8;
 	config.iq_inverted = false;
 	config.public_network = false;
 	config.tx_power = -10; /* Must remain -10 dBm for this lab. */

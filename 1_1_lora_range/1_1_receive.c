@@ -16,6 +16,8 @@ BUILD_ASSERT(DT_NODE_HAS_STATUS_OKAY(DEFAULT_RADIO_NODE),
 	     "No default LoRa radio specified in DT");
 
 #define MAX_DATA_LEN 255
+#define TEAM_PAYLOAD_PREFIX "ese5180t15-"
+#define TEAM_PAYLOAD_PREFIX_LEN (sizeof(TEAM_PAYLOAD_PREFIX) - 1)
 
 #define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
 #include <zephyr/logging/log.h>
@@ -35,6 +37,15 @@ void lora_receive_cb(const struct device *dev, uint8_t *data, uint16_t size,
 {
 	ARG_UNUSED(dev);
 	ARG_UNUSED(user_data);
+
+	/* Ignore packets from other teams that use the same LoRa physical-layer
+	 * settings. The final counter byte may be any digit from 0 through 9. */
+	if (size != TEAM_PAYLOAD_PREFIX_LEN + 1 ||
+	    memcmp(data, TEAM_PAYLOAD_PREFIX, TEAM_PAYLOAD_PREFIX_LEN) != 0 ||
+	    data[TEAM_PAYLOAD_PREFIX_LEN] < '0' ||
+	    data[TEAM_PAYLOAD_PREFIX_LEN] > '9') {
+		return;
+	}
 
 	if (gpio_is_ready_dt(&leds[active_led_idx])) {
 		gpio_pin_set_dt(&leds[active_led_idx], 0);
@@ -83,10 +94,11 @@ int main(void)
 
 	/* These physical-layer settings must match the transmitter. */
 	config.frequency = 433920000; /* 433.92 MHz */
+	/* Must exactly match the transmitter's range profile. */
 	config.bandwidth = BW_125_KHZ;
-	config.datarate = SF_10;
-	config.preamble_len = 8;
-	config.coding_rate = CR_4_5;
+	config.datarate = SF_11;
+	config.preamble_len = 16;
+	config.coding_rate = CR_4_8;
 	config.iq_inverted = false;
 	config.public_network = false;
 	config.tx = false;
@@ -97,7 +109,7 @@ int main(void)
 		return 0;
 	}
 
-	LOG_INF("Listening continuously on 433.92 MHz (SF10)...");
+	LOG_INF("Listening continuously on 433.92 MHz (SF11, CR 4/8)...");
 
 	ret = lora_recv_async(lora_dev, lora_receive_cb, NULL);
 	if (ret < 0) {

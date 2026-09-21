@@ -42,15 +42,23 @@ RX RSSI: -000 dBm | SNR: 0 dB | Payload: ese5180t15-0 (Active LED: 1)
 | Frequency | 433.92 MHz |
 | Transmit power | -10 dBm |
 | Bandwidth | 125 kHz |
-| Spreading factor | SF10 |
-| Coding rate | 4/5 |
-| Preamble | 8 symbols |
+| Spreading factor | SF11 |
+| Coding rate | 4/8 |
+| Preamble | 16 symbols |
 | IQ inversion | Disabled |
 | Public network | Disabled |
 
-The transmitter calculates airtime at startup and refuses to transmit if a
-packet would last one second or longer. After each packet it remains silent for
-at least 30 times the packet airtime and never less than 10 seconds.
+This range-oriented profile increases processing gain, forward-error-correction
+redundancy, and acquisition time while keeping each 12-byte transmission below
+the one-second FCC burst limit. The transmitter calculates airtime at startup
+and refuses to transmit if a packet would last one second or longer. After each
+packet it remains silent for at least 30 times the packet airtime and never less
+than 10 seconds.
+
+On the NUCLEO-WL55JC2 hardware, the verified packet airtime is **857 ms** and
+the resulting required quiet period is **25,710 ms**. The receiver filters out
+payloads that do not begin with `ese5180t15-`, preventing other teams using the
+same physical-layer settings from being mistaken for Team 15 packets.
 
 ### Range observations
 
