@@ -1,3 +1,4 @@
 build/
 tmp/
 .DS_Store
+2_lorawan/src/secrets.h

@@ -1,131 +1,148 @@
-# ESE5180: Lab 1 Wireless Comms
+# ESE5180 Lab 1: Wireless Communications
 
-**Group Number:** 15
+**Team 15**
 
-| Team Member Name | Email Address |
+| Team member | Email |
 |---|---|
 | Lei, Si Wei | laialex@engineering.upenn.edu |
 | Yu, Alexander | ayu2126@engineering.upenn.edu |
 
-**GitHub Repository URL:** https://github.com/Alex-lei-1/ese5180f26-lab1-t15
+**Repository:** https://github.com/Alex-lei-1/ese5180f26-lab1-t15
 
 ## 1.1 LoRa Range Challenge
 
-The source files for this section are in `1_1_lora_range/`:
+Source: `1_1_lora_range/1_1_send.c` and `1_1_receive.c`
 
-- `1_1_send.c`: FCC-compliant 433.92 MHz LoRa transmitter
-- `1_1_receive.c`: matching LoRa receiver with RSSI/SNR logging
+Payload: `ese5180t15-N`
 
-### Team and packet format
+| Result | Value |
+|---|---:|
+| Longest successful distance | **478 m** |
+| RSSI at longest distance | **-99 dBm** |
+| SNR at longest distance | **-6 dB** |
+| Packet airtime | **857 ms** |
+| Required quiet period | **25,710 ms** |
 
-- Team number: **15**
-- Packet format: `ese5180t15-N`
-- `N` is a single-digit packet counter that cycles from 0 through 9.
-
-### Range-test result
-
-- Longest successful distance: **TODO: record during the in-person test**
-- RSSI at longest successful distance: **TODO dBm**
-- SNR at longest successful distance: **TODO dB**
-- Test location/conditions: **TODO**
-
-Receiver output has the following form:
-
-```text
-RX RSSI: -000 dBm | SNR: 0 dB | Payload: ese5180t15-0 (Active LED: 1)
-```
-
-### Configuration used
+![Team 15 range-test serial data](docs/part1-1-range-t15.png)
 
 | Parameter | Value |
 |---|---:|
 | Frequency | 433.92 MHz |
-| Transmit power | -10 dBm |
+| TX power | -10 dBm |
 | Bandwidth | 125 kHz |
 | Spreading factor | SF11 |
 | Coding rate | 4/8 |
 | Preamble | 16 symbols |
-| IQ inversion | Disabled |
-| Public network | Disabled |
 
-This range-oriented profile increases processing gain, forward-error-correction
-redundancy, and acquisition time while keeping each 12-byte transmission below
-the one-second FCC burst limit. The transmitter calculates airtime at startup
-and refuses to transmit if a packet would last one second or longer. After each
-packet it remains silent for at least 30 times the packet airtime and never less
-than 10 seconds.
+This profile increased range through high processing gain, stronger coding,
+and a longer preamble. Clear line of sight, correct antenna orientation, and
+distance from metal also improved the link. The disadvantages are low data
+rate, long airtime, greater energy per packet, and more channel occupancy. A
+real product should use the lowest airtime and power that still provide enough
+link margin.
 
-On the NUCLEO-WL55JC2 hardware, the verified packet airtime is **857 ms** and
-the resulting required quiet period is **25,710 ms**. The receiver filters out
-payloads that do not begin with `ese5180t15-`, preventing other teams using the
-same physical-layer settings from being mistaken for Team 15 packets.
+Raw LoRa accepts any packet using matching physical settings. The receiver
+therefore validates the `ese5180t15-` prefix and counter so other teams' packets
+are ignored.
 
-### Range observations
+## 1.2 Trading Range for Bandwidth
 
-**What helped increase range?** A clear line of sight, correct antenna
-orientation, physical separation from nearby metal/obstructions, and matched
-frequency/bandwidth/spreading-factor/coding-rate settings on both boards.
+Source: `1_2_lora_bandwidth/1_2_send.c` and `1_2_receive.c`
 
-**What are the disadvantages?** Range-oriented LoRa settings reduce data rate,
-increase airtime and energy per message, and make the channel more susceptible
-to congestion because each packet occupies it longer.
+| Parameter | 1.1 range | 1.2 bandwidth |
+|---|---:|---:|
+| Bandwidth | 125 kHz | **500 kHz** |
+| Spreading factor | SF11 | **SF5** |
+| Coding rate | 4/8 | **4/5** |
+| Preamble | 16 | **12** |
+| 12-byte airtime | 857 ms | **4 ms** |
+| Nominal coded bit rate | 0.336 kbps | **62.5 kbps** |
 
-**What is realistic in a product?** A product should choose the lowest airtime
-and transmit power that still provide an adequate link margin in the intended
-environment. It should also authenticate or identify packets at the application
-layer; raw LoRa receivers otherwise accept any packet with matching physical
-settings.
+Frequency remained 433.92 MHz and TX power remained -10 dBm. BW500, SF5,
+CR4/5, and the minimum valid SF5 preamble produced the fastest measured packet
+airtime: **4 ms**. The coded-rate calculation includes the 4/5 coding factor;
+78.125 kbps would be the uncoded modulation rate. End-to-end verification
+received consecutive Team 15 packets:
 
-### Range-test checklist
-
-1. Build and flash one board with `1_1_send.c` and the other with
-   `1_1_receive.c`.
-2. Confirm the receiver serial log shows the correct team payload, RSSI, and
-   SNR before leaving for the outdoor test.
-3. Bring a charged laptop and an offline serial-terminal program.
-4. During the test, save the longest successful distance and its RSSI/SNR above.
-5. Power off the transmitter whenever it is not actively being tested.
-
-### Build, flash, and operate
-
-The two applications must be built separately. First copy the transmitter from
-the cloned repository into a Zephyr sample application:
-
-```sh
-cd <path-to-this-cloned-repository>
-cp -R ~/zephyrproject/zephyr/samples/drivers/lora/send ~/zephyrproject/lab1_send
-cp 1_1_lora_range/1_1_send.c ~/zephyrproject/lab1_send/src/main.c
-
-cd ~/zephyrproject
-source .venv/bin/activate
-west build --pristine -b nucleo_wl55jc lab1_send
-west flash
+```text
+RX RSSI: -54 dBm | SNR: 9 dB | Payload: ese5180t15-1
+RX RSSI: -52 dBm | SNR: 9 dB | Payload: ese5180t15-2
 ```
 
-That flashes the transmitter onto the currently connected NUCLEO-WL55JC.
-Disconnect it, connect the board that will be the receiver, and then run:
+**Spreading-factor tradeoff:** Higher SF increases symbol time, sensitivity,
+range, airtime, and energy while reducing data rate. Lower SF does the reverse.
 
-```sh
-cd <path-to-this-cloned-repository>
-cp -R ~/zephyrproject/zephyr/samples/drivers/lora/receive ~/zephyrproject/lab1_receive
-cp 1_1_lora_range/1_1_receive.c ~/zephyrproject/lab1_receive/src/main.c
+**Low-bandwidth applications:** Environmental/agricultural sensors, utility
+meters, and remote asset trackers send small, infrequent reports; long range
+and battery life matter more than throughput.
 
-cd ~/zephyrproject
-source .venv/bin/activate
-west build --pristine -b nucleo_wl55jc lab1_receive
-west flash
+## 1.3 Energy Check
+
+Source: `1_3_energy/`. Both builds used 915 MHz, BW125, SF10, CR4/5, an
+8-symbol preamble, a 12-byte payload, and a 2-second interval. Only TX power
+changed.
+
+| TX power | Peak TX current |
+|---:|---:|
+| -9 dBm | **39.20 mA** |
+| +22 dBm | **157.89 mA** |
+
+![PPK2 low-to-high TX-current transition](docs/part1-3-ppk2-transition.png)
+
+Battery life also depends on airtime, packet frequency, retries, receive
+windows, MCU sleep current, peripherals, regulator efficiency, and battery
+self-discharge. A coin cell is generally unsuitable for the measured 157.89 mA
+pulse because of internal resistance and voltage sag. AA cells or a suitable
+LiPo can provide higher pulse current, subject to their datasheet limits.
+
+## 2. LoRaWAN
+
+Source: `2_lorawan/`. Credentials are kept in gitignored `src/secrets.h`;
+`secrets.example.h` contains only placeholders. The TTN formatter is
+`uplink_decoder.js`.
+
+```json
+{"name":"Alex","team":"15","board":"WL55JC"}
 ```
 
-After flashing, open the receiver's serial port at 115200 baud. On macOS,
-identify the port after connecting the board:
+| Setting | Value |
+|---|---|
+| Activation | ABP |
+| Region / channels | US915 FSB2 (8-15, 65) |
+| Data rate | DR3 / SF7BW125 |
+| Class / FPort | Class A / 2 |
+| Uplink | Unconfirmed, every 10 seconds |
+| Payload | 44 bytes, no trailing null |
+| TTN RSSI / SNR | -88 dBm / 8.75 dB |
 
-```sh
-ls /dev/cu.usbmodem*
-screen /dev/cu.usbmodemXXXX 115200
-```
+![TTN decoded payload and serial transmission](docs/part2-verification.png)
 
-Replace `XXXX` with the actual port suffix. To close `screen`, press `Ctrl-A`,
-then `\`, then confirm. The receiver's blue LED means it is listening; each
-validly received LoRa packet advances the active LED from blue to green to red.
-The transmitter's red LED is on only during RF transmission, followed by a
-blue/green double flash and the required quiet period.
+Build, flash, serial transmission, gateway reception, and decoded JSON all
+passed. Removing the sample's `LinkCheckReq` eliminated misleading RX2 timeout
+messages while preserving successful unconfirmed uplinks.
+
+### LoRaWAN questions
+
+**Confirmed vs. unconfirmed:** Confirmed uplinks request an acknowledgement and
+fit alarms or critical state changes, but acknowledgements/retries cost airtime,
+latency, and energy. Unconfirmed uplinks fit replaceable periodic telemetry.
+
+**Reset session and MAC state:** An ABP device and TTN must agree on frame
+counters, keys, and MAC state. Reflashing can reset device counters while TTN
+retains old values, causing replay rejection; reset resynchronizes the lab
+prototype.
+
+**Identifiers and keys:** Raw LoRa provides only radio transport. LoRaWAN uses
+DevEUI/DevAddr for identity and routing, NwkSKey for network integrity, and
+AppSKey for application confidentiality, allowing many authenticated devices
+to share gateway infrastructure.
+
+**Why OTAA:** OTAA performs a join and derives fresh session keys. It improves
+provisioning, key rotation, replacement, and network migration, so it is safer
+than fixed ABP credentials in real deployments.
+
+## Verification summary
+
+All 1.1, 1.2, 1.3, and LoRaWAN applications built successfully for
+`nucleo_wl55jc/stm32wl55xx` with Zephyr 4.4.99. Hardware tests and required
+screenshots are included above.
