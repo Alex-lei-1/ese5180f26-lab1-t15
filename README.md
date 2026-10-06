@@ -3,6 +3,8 @@
 **Team 15:** Lei, Si Wei (`laialex@engineering.upenn.edu`) and Yu, Alexander
 (`ayu2126@engineering.upenn.edu`)
 
+**GitHub Repository URL:** https://github.com/ese5180/f26-lab1-T15
+
 ## 1.1 LoRa Range Challenge
 
 Files: `1_1_lora_range/1_1_send.c` and `1_1_receive.c`
