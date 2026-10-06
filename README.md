@@ -126,39 +126,3 @@ Files: `2_lorawan/src/main.c`, `2_lorawan/prj.conf`, and
 ### 2.2 Latest decoded payload, live data, and serial monitor
 
 ![TTN decoded payload and serial transmission](docs/part2-verification.png)
-
-**What is the difference between the `LORAWAN_MSG_UNCONFIRMED` and
-`LORAWAN_MSG_CONFIRMED` parameters in the `lorawan_send` API? What use cases
-can you think of for tuning these parameters?**
-
-`LORAWAN_MSG_CONFIRMED` requests a network acknowledgement and may retry if no
-acknowledgement arrives. It is appropriate for alarms or critical state
-changes. `LORAWAN_MSG_UNCONFIRMED` does not request an acknowledgement; it is
-better for frequent, replaceable telemetry because it uses less airtime and
-energy.
-
-**Why do we need to hit RESET session and MAC state on the TTN console?**
-
-An ABP device and TTN must agree on frame counters and MAC state. Reflashing
-can reset the device's counters while TTN retains the old values, causing TTN
-to reject new packets as replays. Resetting the session and MAC state
-resynchronizes them for this lab device.
-
-**Why does LoRaWAN require device identifiers (DevEUI, DevAddr) and session
-keys (NwkSKey, AppSKey), while raw LoRa communication does not? What problem
-does this solve in large-scale networks?**
-
-Raw LoRa only sends radio packets and does not define identity, routing,
-authentication, or encryption. LoRaWAN uses DevEUI and DevAddr to identify and
-route devices, NwkSKey to authenticate network traffic, and AppSKey to protect
-application data. This lets many devices securely share gateway and network
-infrastructure without accepting or exposing one another's traffic.
-
-**In this assignment, we used ABP for simplicity. Explain one advantage of
-OTAA in real deployments, and why it is preferred over ABP outside classroom
-prototypes.**
-
-OTAA performs a join procedure and derives fresh session keys instead of
-permanently installing fixed session credentials. This makes provisioning,
-key renewal, device replacement, and network migration safer and easier, so it
-is preferred for real deployments.
